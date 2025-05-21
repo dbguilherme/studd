@@ -6,24 +6,31 @@ from sklearn.ensemble import RandomForestClassifier as RF
 
 from skmultiflow.drift_detection.page_hinkley import PageHinkley as PHT
 
+def plot_results(errorTeacher, errorStud, errorbetweenboth, std_alarms, step, title="STUDD"):
+    import matplotlib.pyplot as plt
+    y = range(1000, 1000 + len(errorTeacher))
+    plt.clf()
 
+    plt.plot(y, errorStud, label='Student')
+    plt.plot(y, errorTeacher, label='Teacher')
+    plt.plot(y, errorbetweenboth, label='Between')
+    plt.xlabel('Iteration')
+    plt.ylabel('Error')
+    plt.legend()
+    plt.title(title)
+
+    for i in std_alarms:
+        plt.axvline(x=i, color='black', linestyle='--', label=f"drift_{i}")
+
+    plt.savefig(f'error{step}.png')
+    plt.show()
 
 def Workflow(X, y, delta, window_size):
     ucdd = STUDD(X=X, y=y, n_train=window_size)
 
     ucdd.initial_fit(model=RF(), std_model=RF())
 
-    print("Detecting change by tracking features")
-
-    UFD = ucdd.drift_detection_uspv_x(datastream_=ucdd.datastream,
-                                      model_=ucdd.base_model,
-                                      n_train_=ucdd.n_train,
-                                      X=X,
-                                      window_size=window_size,
-                                      pvalue=delta,
-                                      n_samples=window_size,
-                                      upd_model=True)
-
+   
     print("Detecting change with STUDD")
     RES_STUDD = ucdd.drift_detection_std(datastream_=ucdd.datastream,
                                         model_=ucdd.base_model,
@@ -36,93 +43,12 @@ def Workflow(X, y, delta, window_size):
                                         detector=PHT)
 
 
-    print("Detecting change with bl1")
-    res_bl1 = ucdd.BL1_never_adapt(datastream_=ucdd.datastream,
-                                   model_=ucdd.base_model)
-
-    print("Detecting change with bl2")
-    res_bl2 = ucdd.BL2_retrain_after_w(datastream_=ucdd.datastream,
-                                       model_=ucdd.base_model,
-                                       n_train_=ucdd.n_train,
-                                       n_samples=window_size)
-
-    print("Detecting change with SS")
-    SS = ucdd.drift_detection_spv(datastream_=ucdd.datastream,
-                                  model_=ucdd.base_model,
-                                  n_train_=ucdd.n_train,
-                                  n_samples=window_size,
-                                  delay_time=0,
-                                  observation_ratio=1,
-                                  upd_model=True,
-                                  delta=delta,
-                                  detector=PHT)
-
-    print("Detecting change with UTH")
-    UHT = ucdd.drift_detection_uspv(datastream_=ucdd.datastream,
-                                    model_=ucdd.base_model,
-                                    n_train_=ucdd.n_train,
-                                    use_prob=False,
-                                    n_samples=window_size,
-                                    method="ks",
-                                    window_size=window_size,
-                                    upd_model=True,
-                                    pvalue=delta)
-
-    print("Detecting change with UTHF")
-    UHTF = ucdd.drift_detection_uspv_f(datastream_=ucdd.datastream,
-                                       model_=ucdd.base_model,
-                                       n_train_=ucdd.n_train,
-                                       use_prob=False,
-                                       n_samples=window_size,
-                                       method="ks",
-                                       window_size=window_size,
-                                       upd_model=True,
-                                       pvalue=delta)
-
-    DSS = ucdd.drift_detection_spv(datastream_=ucdd.datastream,
-                                   model_=ucdd.base_model,
-                                   n_train_=ucdd.n_train,
-                                   delay_time=int(window_size / 2),
-                                   n_samples=window_size,
-                                   observation_ratio=1,
-                                   upd_model=True,
-                                   delta=delta,
-                                   detector=PHT)
-
-    WS = ucdd.drift_detection_spv(datastream_=ucdd.datastream,
-                                  model_=ucdd.base_model,
-                                  n_train_=ucdd.n_train,
-                                  n_samples=window_size,
-                                  delay_time=0,
-                                  observation_ratio=.5,
-                                  upd_model=True,
-                                  delta=delta,
-                                  detector=PHT)
-
-    DWS = ucdd.drift_detection_spv(datastream_=ucdd.datastream,
-                                   model_=ucdd.base_model,
-                                   n_train_=ucdd.n_train,
-                                   n_samples=window_size,
-                                   delay_time=int(window_size / 2),
-                                   observation_ratio=0.5,
-                                   upd_model=True,
-                                   delta=delta,
-                                   detector=PHT)
 
     training_info = ucdd.init_training_data
 
     results = {
                "STUDD": RES_STUDD,
-               "BL1": res_bl1,
-               "BL2": res_bl2,
-               "SS": SS,
-               "DSS": DSS,
-               "WS": WS,
-               "DWS": DWS,
-               "UHT": UHT,
-               "UHTF": UHTF,
-               "UFD": UFD}
-
+                }
     perf_kpp = dict()
     perf_acc = dict()
     nupdates = dict()
@@ -147,7 +73,8 @@ def Workflow(X, y, delta, window_size):
     perf = pd.concat([perf_kpp.reset_index(drop=True), perf_acc], axis=1)
 
     perf.columns = ['Method', 'Kappa', 'rm', 'Acc']
-    perf = perf.drop("rm", axis=1)
-
+    # plot_results(perf["Kappa"].values, perf["Acc"].values,
+    #              perf["Kappa"].values, ucdd.std_alarms, window_size, title="STUDD")
+    
     return perf, pointsbought, nupdates, training_info, results
 

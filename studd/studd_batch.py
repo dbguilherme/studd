@@ -3,6 +3,7 @@ from skmultiflow.drift_detection.page_hinkley import PageHinkley as PHT
 from ht_detectors.tracker_output import HypothesisTestDetector
 import copy
 import numpy as np
+from sklearn import metrics
 
 
 class STUDD:
@@ -67,6 +68,17 @@ class STUDD:
         y_hat_hist = []
         y_buffer, y_hist = [], []
         X_buffer, X_hist = [], []
+
+        y_hat_hist = []
+        y_student_hist = []
+
+
+        error=[]
+        errorStud=[]
+        errorTeacher=[]
+        errorbetweenboth=[]
+        accuracyStud=[]
+        accuracyTeacher=[]
         while datastream.has_more_samples():
             # print("Iteration: " + str(iter))
 
@@ -77,8 +89,10 @@ class STUDD:
             X_buffer.append(Xi[0])
 
             model_yhat = base_model.predict(Xi)
+
             y_hat_hist.append(model_yhat[0])
             std_model_yhat = student_model.predict(Xi)
+            y_student_hist.append(std_model_yhat[0])
 
             std_err = int(model_yhat != std_model_yhat)
             std_detector.add_element(std_err)
@@ -113,7 +127,16 @@ class STUDD:
                     n_updates += 1
                     samples_used += samples_used_iter
                     print("Moving on")
+           
+                import matplotlib.pyplot as plt
 
+               
+            errorStud.append(metrics.cohen_kappa_score(y1=y_hist,y2=y_hat_hist))
+            errorTeacher.append(metrics.cohen_kappa_score(y1=y_hist,y2=y_student_hist))
+            errorbetweenboth.append(metrics.cohen_kappa_score(y1=y_hat_hist,y2=y_student_hist))
+
+            accuracyStud.append(metrics.accuracy_score(y_true=y_hist, y_pred=y_hat_hist))
+            accuracyTeacher.append(metrics.accuracy_score(y_true=y_hist, y_pred=y_student_hist))
             iter += 1
 
         preds = dict({"y": y_hist, "y_hat": y_hat_hist})
@@ -123,6 +146,24 @@ class STUDD:
                        "n_updates": n_updates,
                        "samples_used": samples_used})
 
+        
+        import matplotlib.pyplot as plt
+        y=range(500, 500+len(accuracyStud))
+        plt.clf()
+       
+
+        
+       
+        plt.figure(figsize=(10, 6))
+        plt.plot(y,accuracyStud, label="Student Model Accuracy", color="blue")
+        plt.plot(y, accuracyTeacher, label="Teacher Model Accuracy", color="green")
+        plt.xlabel("Iterations")
+        plt.ylabel("Accuracy")
+        plt.title("Accuracy of Student and Teacher Models Over Time")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+      
         return output
 
     @staticmethod

@@ -1,31 +1,31 @@
 import pickle
 
 from workflows import Workflow
+import pandas as pd
 
-with open('data/real_datasets.pkl', 'rb') as fp:
-    datasets = pickle.load(fp)
 
-delta = 0.002
+# Load the dataset from a CSV file
+df = pd.read_csv('studd/data/insects.csv')
+
+# Rename the columns of the dataframe to be sequential integers, 
+# with the last column named "target".
+column = []
+for i in range(df.shape[1] - 1):
+    column.append(i)
+column.append("target")
+df.columns = column
+
+delta = 0.8
 
 results = dict()
-for df in datasets:
+for i in range(1):
     
-    y = data.target.values
-    X = data.drop(['target'], axis=1)
-    
-    small_data_streams = ['AbruptInsects',
-                          'Insects',
-                          'Keystroke',
-                          'ozone',
-                          'outdoor',
-                          'luxembourg']
+    y = df.target.values
+    X = df.drop(['target'], axis=1)
+   
 
-    if str(df) in small_data_streams:
-        n_train_obs = 500
-        W = n_train_obs
-    else:
-        n_train_obs = 1000
-        W = n_train_obs
+    n_train_obs = 500
+    W = n_train_obs
     
     predictions, detections, train_size, training_info, results_comp = \
         Workflow(X=X, y=y,delta=delta,window_size=W)
@@ -38,7 +38,7 @@ for df in datasets:
              training_info=training_info,
              results_comp=results_comp)
     
-    results[df] = ds_results
+    results[f"experiment_{i}"] = ds_results
     
-    with open('data/studd_experiments.pkl', 'wb') as fp:
+    with open('studd/data/studd_experiments.pkl', 'wb') as fp:
         pickle.dump(results, fp)
