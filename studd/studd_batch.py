@@ -59,7 +59,7 @@ class STUDD:
         student_model = copy.deepcopy(std_model_)
         n_train = copy.deepcopy(n_train_)
 
-        std_detector = detector(delta=delta)
+        std_detector = detector(delta=delta , threshold=10)
         std_alarms = []
 
         iter = n_train
@@ -73,10 +73,8 @@ class STUDD:
         y_student_hist = []
 
 
-        error=[]
-        errorStud=[]
-        errorTeacher=[]
-        errorbetweenboth=[]
+        
+        errorStud=[]        
         accuracyStud=[]
         accuracyTeacher=[]
         while datastream.has_more_samples():
@@ -98,7 +96,7 @@ class STUDD:
             std_detector.add_element(std_err)
 
             if std_detector.detected_change():
-                print("Found change std in iter: " + str(iter))
+                print("Found change std in iter: " + str(iter) + " "+ str(std_detector.sum))
                 std_alarms.append(iter)
 
                 if upd_model:
@@ -128,12 +126,10 @@ class STUDD:
                     samples_used += samples_used_iter
                     print("Moving on")
            
-                import matplotlib.pyplot as plt
+                
 
                
-            errorStud.append(metrics.cohen_kappa_score(y1=y_hist,y2=y_hat_hist))
-            errorTeacher.append(metrics.cohen_kappa_score(y1=y_hist,y2=y_student_hist))
-            errorbetweenboth.append(metrics.cohen_kappa_score(y1=y_hat_hist,y2=y_student_hist))
+            errorStud.append(std_detector.sum)            
 
             accuracyStud.append(metrics.accuracy_score(y_true=y_hist, y_pred=y_hat_hist))
             accuracyTeacher.append(metrics.accuracy_score(y_true=y_hist, y_pred=y_student_hist))
@@ -147,22 +143,6 @@ class STUDD:
                        "samples_used": samples_used})
 
         
-        import matplotlib.pyplot as plt
-        y=range(500, 500+len(accuracyStud))
-        plt.clf()
-       
-
-        
-       
-        plt.figure(figsize=(10, 6))
-        plt.plot(y,accuracyStud, label="Student Model Accuracy", color="blue")
-        plt.plot(y, accuracyTeacher, label="Teacher Model Accuracy", color="green")
-        plt.xlabel("Iterations")
-        plt.ylabel("Accuracy")
-        plt.title("Accuracy of Student and Teacher Models Over Time")
-        plt.legend()
-        plt.grid(True)
-        plt.show()
       
         return output
 

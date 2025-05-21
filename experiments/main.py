@@ -15,7 +15,7 @@ for i in range(df.shape[1] - 1):
 column.append("target")
 df.columns = column
 
-delta = 0.8
+delta = 0.02
 
 results = dict()
 for i in range(1):
@@ -24,8 +24,7 @@ for i in range(1):
     X = df.drop(['target'], axis=1)
    
 
-    n_train_obs = 500
-    W = n_train_obs
+    W = 1000
     
     predictions, detections, train_size, training_info, results_comp = \
         Workflow(X=X, y=y,delta=delta,window_size=W)

@@ -38,7 +38,7 @@ def Workflow(X, y, delta, window_size):
                                         n_train_=ucdd.n_train,
                                         n_samples=window_size,
                                         delta=delta / 2,
-                                        upd_model=True,
+                                        upd_model=False,
                                         upd_std_model=True,
                                         detector=PHT)
 
